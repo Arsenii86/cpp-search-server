@@ -1,13 +1,11 @@
 #include <algorithm>
-#include <cmath>
 #include <iostream>
-#include <map>
 #include <set>
 #include <string>
 #include <utility>
 #include <vector>
-
-
+#include <map>
+#include <cmath>
 
 using namespace std;
 
@@ -62,11 +60,12 @@ public:
     void AddDocument(int document_id, const string& document) {
         ++document_count_;
         const vector<string> words = SplitIntoWordsNoStop(document);
+        double word_frec=1.0/words.size();
         for (const string& word:words)
-        {   double word_count=count(words.begin(),words.end(),word);      
-            double TF=word_count/words.size();
-           (word_to_document_freqs_[word]).insert({document_id,TF}); 
-        }            
+        {   
+          word_to_document_freqs_[word][document_id]+=word_frec; 
+        }    
+        
     }
 
     vector<Document> FindTopDocuments(const string& raw_query) const {
@@ -93,6 +92,10 @@ private:
     map<string, map<int, double>> word_to_document_freqs_;
 
     set<string> stop_words_;
+    
+    double calcIdf( const double& countWord,const int& allWord) const{
+        return log(allWord/countWord);        
+    }
 
     bool IsStopWord(const string& word) const {
         return stop_words_.count(word) > 0;
@@ -124,23 +127,17 @@ private:
 
     vector<Document> FindAllDocuments(const Query& query_words) const {
         map<int, double> document_to_relevance;
-        //double relev=0;
         for (const auto& plusWord:query_words.plusWords)
         {
             if (word_to_document_freqs_.count(plusWord))
             {   
                 double IDF=0;
                 int mapSizePlusWord=(word_to_document_freqs_.at(plusWord)).size();
-                //for (const auto& mapIdTf:word_to_document_freqs_.at(plusWord))
-                
-                {  if(mapSizePlusWord<document_count_)
-                    { 
-                        IDF=-1*log((mapSizePlusWord+0.0)/document_count_);}
-                   else 
-                        IDF=0; 
+                IDF=calcIdf(mapSizePlusWord,document_count_);
+                if(mapSizePlusWord==document_count_){ 
+                        IDF=0;
                 }
-                for (const auto & [id_doc,TF]:word_to_document_freqs_.at(plusWord)){
-                    
+                for (const auto & [id_doc,TF]:word_to_document_freqs_.at(plusWord)){  
                 document_to_relevance[id_doc]+=IDF*TF;
                 }
             }
