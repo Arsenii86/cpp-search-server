@@ -61,8 +61,7 @@ public:
         ++document_count_;
         const vector<string> words = SplitIntoWordsNoStop(document);
         double word_frec=1.0/words.size();
-        for (const string& word:words)
-        {   
+        for (const string& word:words){   
           word_to_document_freqs_[word][document_id]+=word_frec; 
         }    
         
@@ -93,8 +92,8 @@ private:
 
     set<string> stop_words_;
     
-    double calcIdf( const double& countWord,const int& allWord) const{
-        return log(allWord/countWord);        
+    double СalcIdf( const double countWord) const{
+        return log(document_count_ /countWord);        
     }
 
     bool IsStopWord(const string& word) const {
@@ -114,8 +113,7 @@ private:
     Query ParseQuery(const string& text) const {
         Query query_words;
         for (const string& word : SplitIntoWordsNoStop(text)) {
-            if(word[0]=='-') 
-            {
+            if(word[0]=='-') {
                string word2=word.substr(1);
                 if (!IsStopWord(word2)) {
                 query_words.minusWords.insert(word2);}
@@ -127,27 +125,19 @@ private:
 
     vector<Document> FindAllDocuments(const Query& query_words) const {
         map<int, double> document_to_relevance;
-        for (const auto& plusWord:query_words.plusWords)
-        {
-            if (word_to_document_freqs_.count(plusWord))
-            {   
+        for (const auto& plusWord:query_words.plusWords){
+            if (word_to_document_freqs_.count(plusWord)){   
                 double IDF=0;
                 int mapSizePlusWord=(word_to_document_freqs_.at(plusWord)).size();
-                IDF=calcIdf(mapSizePlusWord,document_count_);
-                if(mapSizePlusWord==document_count_){ 
-                        IDF=0;
-                }
+                IDF=СalcIdf(mapSizePlusWord);
                 for (const auto & [id_doc,TF]:word_to_document_freqs_.at(plusWord)){  
                 document_to_relevance[id_doc]+=IDF*TF;
                 }
             }
         }
-         for (const auto& minusWord:query_words.minusWords)
-        {
-            if (word_to_document_freqs_.count(minusWord))
-            {
-                for (const auto & [id_doc,TF]:word_to_document_freqs_.at(minusWord))
-                {
+         for (const auto& minusWord:query_words.minusWords){
+            if (word_to_document_freqs_.count(minusWord)) {
+                for (const auto & [id_doc,TF]:word_to_document_freqs_.at(minusWord)){
                   document_to_relevance.erase(id_doc);
                 }
             }
