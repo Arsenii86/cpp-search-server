@@ -101,11 +101,11 @@ public:
             throw invalid_argument("ID документа <0" );
         }
         if(count_if(documents_.begin(),documents_.end(),[document_id](const auto& doc){return doc.first==document_id;})){
-            throw invalid_argument("Есть документ стаким ID");;
+            throw invalid_argument("Есть документ с таким ID");;
         }
         for (const string& word : words) {
             if(!IsValidWord(word)){
-                throw invalid_argument("Слова в докумнете держат неверные символы");
+                throw invalid_argument("Слова в документе содержат неверные символы");
             }
         }
         const double inv_word_count = 1.0 / words.size();
@@ -120,12 +120,12 @@ public:
         vector<Document> result;
         const Query query = ParseQuery(raw_query);
         for (const auto & plus_word:query.plus_words){
-            if(!IsValidWord(plus_word))throw invalid_argument("Слова запроса содржат неверные символы");
+            if(!IsValidWord(plus_word))throw invalid_argument("Слова запроса содержат неверные символы");
         }
         for (const auto & minus_word:query.minus_words){
-            if(!IsValidWord(minus_word))throw invalid_argument("Слова запроса содржат неверные символы");
+            if(!IsValidWord(minus_word))throw invalid_argument("Слова запроса содержат неверные символы");
             if (minus_word[0]=='-') throw invalid_argument("Два \'-\' перед минус-словом");
-            if (minus_word.empty()) throw invalid_argument("Минус слово не содержит слово");
+            if (minus_word.empty()) throw invalid_argument("Минус-слово не содержит слово");
         }
        result = FindAllDocuments(query, document_predicate);
 
@@ -160,12 +160,12 @@ public:
     tuple<vector<string>, DocumentStatus> MatchDocument(const string& raw_query,int document_id) const {
         const Query query = ParseQuery(raw_query);
          for (const auto & plus_word:query.plus_words){
-            if(!IsValidWord(plus_word))throw invalid_argument("Слова запроса содржат неверные символы");
+            if(!IsValidWord(plus_word))throw invalid_argument("Слова запроса содержат неверные символы");
         }
         for (const auto & minus_word:query.minus_words){
-            if(!IsValidWord(minus_word))throw invalid_argument("Слова запроса содржат неверные символы");
+            if(!IsValidWord(minus_word))throw invalid_argument("Слова запроса содержат неверные символы");
             if (minus_word[0]=='-') throw invalid_argument("Два \'-\' перед минус-словом");
-            if (minus_word.empty()) throw invalid_argument("Минус слово не содержит слово");
+            if (minus_word.empty()) throw invalid_argument("Минус-слово не содержит слово");
         }
         vector<string> matched_words;
         for (const string& word : query.plus_words) {
@@ -191,14 +191,14 @@ public:
     
     int GetDocumentId(int index) const {
         if (index<0||index>=documents_.size()){
-           throw out_of_range("Индекс документа выходтит за пределы диапазона (0; количество документов)"); 
+           throw out_of_range("Индекс документа выходит за пределы диапазона (0; количество документов)"); 
         }
         else { int i=0;
               for (const auto [doc_id, doc_data]:documents_ ){
                   if (i==index) return doc_id;
                   i++;
               }
-           throw out_of_range("Индекс документа выходтит за пределы диапазона (0; количество документов)");
+           throw out_of_range("Индекс документа выходит за пределы диапазона (0; количество документов)");
         }
     }
     
