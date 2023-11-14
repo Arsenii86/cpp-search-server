@@ -2,6 +2,7 @@
 #include <cmath>
 #include <iostream>
 #include <map>
+#include <numeric>
 #include <set>
 #include <string>
 #include <stdexcept>
@@ -11,6 +12,7 @@
 using namespace std;
 
 const int MAX_RESULT_DOCUMENT_COUNT = 5;
+const double ALLOWANCE=1E-6;
 
 string ReadLine() {
     string s;
@@ -84,8 +86,8 @@ public:
     template <typename StringContainer>
     explicit SearchServer(const StringContainer& stop_words)
         : stop_words_(MakeUniqueNonEmptyStrings(stop_words)) {
-        for (const auto& word:stop_words_){
-            if (!IsValidWord(word)) throw invalid_argument("Стоп слово с неверными символами");
+        if (!all_of(stop_words_.begin(), stop_words_.end(), IsValidWord)){
+            throw invalid_argument("Стоп слово с неверными символами");
         }    
     }
 
@@ -101,7 +103,7 @@ public:
             throw invalid_argument("ID документа <0" );
         }
         if(count_if(documents_.begin(),documents_.end(),[document_id](const auto& doc){return doc.first==document_id;})){
-            throw invalid_argument("Есть документ с таким ID");;
+            throw invalid_argument("Есть документ стаким ID");;
         }
         for (const string& word : words) {
             if(!IsValidWord(word)){
@@ -112,31 +114,22 @@ public:
         for (const string& word : words) {
             word_to_document_freqs_[word][document_id] += inv_word_count;
         }
-        documents_.emplace(document_id, DocumentData{ComputeAverageRating(ratings), status});        
+        documents_.emplace(document_id, DocumentData{ComputeAverageRating(ratings), status});
+        doc_id_.push_back(document_id);
     }
 
     template <typename DocumentPredicate>
     vector<Document> FindTopDocuments(const string& raw_query,                                      DocumentPredicate document_predicate) const {
         vector<Document> result;
-        const Query query = ParseQuery(raw_query);
-        for (const auto & plus_word:query.plus_words){
-            if(!IsValidWord(plus_word))throw invalid_argument("Слова запроса содержат неверные символы");
-        }
-        for (const auto & minus_word:query.minus_words){
-            if(!IsValidWord(minus_word))throw invalid_argument("Слова запроса содержат неверные символы");
-            if (minus_word[0]=='-') throw invalid_argument("Два \'-\' перед минус-словом");
-            if (minus_word.empty()) throw invalid_argument("Минус-слово не содержит слово");
-        }
-       result = FindAllDocuments(query, document_predicate);
+        const Query query = ParseQuery(raw_query);        
+        result = FindAllDocuments(query, document_predicate);
 
-        sort(result.begin(), result.end(),
-             [](const Document& lhs, const Document& rhs) {
-                 if (abs(lhs.relevance - rhs.relevance) < 1e-6) {
+        sort(result.begin(), result.end(),[](const Document& lhs, const Document& rhs) {
+                 if (abs(lhs.relevance - rhs.relevance) < ALLOWANCE) {
                      return lhs.rating > rhs.rating;
-                 } else {
+                 } 
                      return lhs.relevance > rhs.relevance;
-                 }
-             });
+                 });
         if (result.size() > MAX_RESULT_DOCUMENT_COUNT) {
             result.resize(MAX_RESULT_DOCUMENT_COUNT);
         }
@@ -158,15 +151,7 @@ public:
     }
 
     tuple<vector<string>, DocumentStatus> MatchDocument(const string& raw_query,int document_id) const {
-        const Query query = ParseQuery(raw_query);
-         for (const auto & plus_word:query.plus_words){
-            if(!IsValidWord(plus_word))throw invalid_argument("Слова запроса содержат неверные символы");
-        }
-        for (const auto & minus_word:query.minus_words){
-            if(!IsValidWord(minus_word))throw invalid_argument("Слова запроса содержат неверные символы");
-            if (minus_word[0]=='-') throw invalid_argument("Два \'-\' перед минус-словом");
-            if (minus_word.empty()) throw invalid_argument("Минус-слово не содержит слово");
-        }
+        const Query query = ParseQuery(raw_query);         
         vector<string> matched_words;
         for (const string& word : query.plus_words) {
             if (word_to_document_freqs_.count(word) == 0) {
@@ -190,17 +175,12 @@ public:
     }
     
     int GetDocumentId(int index) const {
-        if (index<0||index>=documents_.size()){
+        if (index<0||index>=doc_id_.size()){
            throw out_of_range("Индекс документа выходит за пределы диапазона (0; количество документов)"); 
         }
-        else { int i=0;
-              for (const auto [doc_id, doc_data]:documents_ ){
-                  if (i==index) return doc_id;
-                  i++;
-              }
-           throw out_of_range("Индекс документа выходит за пределы диапазона (0; количество документов)");
-        }
+        return doc_id_[index];                  
     }
+   
     
 private:
     struct DocumentData {
@@ -210,7 +190,7 @@ private:
     const set<string> stop_words_;
     map<string, map<int, double>> word_to_document_freqs_;
     map<int, DocumentData> documents_;
-
+    vector <int> doc_id_;
     bool IsStopWord(const string& word) const {
         return stop_words_.count(word) > 0;
     }
@@ -229,10 +209,7 @@ private:
         if (ratings.empty()) {
             return 0;
         }
-        int rating_sum = 0;
-        for (const int rating : ratings) {
-            rating_sum += rating;
-        }
+        int rating_sum = accumulate(ratings.begin(),ratings.end(),0);        
         return rating_sum / static_cast<int>(ratings.size());
     }
 
@@ -248,6 +225,15 @@ private:
         if (text[0] == '-') {
             is_minus = true;
             text = text.substr(1);
+        }
+        if(!IsValidWord(text)){
+            throw invalid_argument("Слова запроса содержат неверные символы");
+        }
+        if (text[0]=='-'){
+            throw invalid_argument("Два \'-\' перед минус-словом"); 
+        }
+        if (text.empty()) {
+            throw invalid_argument("Минус-слово не содержит слово"); 
         }
         return {text, is_minus, IsStopWord(text)};
     }
@@ -318,5 +304,7 @@ private:
         });
     }
 };
+
+
 
 
