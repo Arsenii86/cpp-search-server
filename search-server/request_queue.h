@@ -5,28 +5,17 @@
 #include <deque>
 #include <vector>
 #include "document.h"
-using std::vector, std::string,std::deque;
 
 class RequestQueue {
 public:
     explicit RequestQueue(const SearchServer& search_server);
     
     template <typename DocumentPredicate>
-    vector<Document> AddFindRequest(const string& raw_query, DocumentPredicate document_predicate) {
-        // напишите реализацию
-        ++curent_minutes_;
-        if (curent_minutes_>min_in_day_){
-            requests_.erase(requests_.begin());
-            --curent_minutes_;            
-        }        
-        vector<Document> matched_documents = search_server_.FindTopDocuments(raw_query,document_predicate);
-        requests_.push_back(QueryResult (raw_query,matched_documents));
-        return matched_documents;
-    }
+    std::vector<Document> AddFindRequest( const std::string& raw_query, DocumentPredicate document_predicate );
+    
+    std::vector<Document> AddFindRequest( const std::string& raw_query, DocumentStatus status );
 
-    vector<Document> AddFindRequest(const string& raw_query, DocumentStatus status);
-
-    vector<Document> AddFindRequest(const string& raw_query); 
+    std::vector<Document> AddFindRequest( const std::string& raw_query ); 
 
     int GetNoResultRequests() const ;
 
@@ -34,11 +23,25 @@ private:
 
     const SearchServer& search_server_;
     struct QueryResult {
-        string Query;
-        vector<Document> matched_documents; 
-        QueryResult (const string& query,const vector<Document>& search_result);
+        std::string Query;
+        int num_result; 
     };
-    deque<QueryResult> requests_;
+    std::deque<QueryResult> requests_;
     const static int min_in_day_ = 1440;
     int curent_minutes_=0;
 }; 
+
+template <typename DocumentPredicate>
+std::vector<Document> RequestQueue::AddFindRequest( const std::string& raw_query, DocumentPredicate document_predicate ) {
+        // напишите реализацию
+        ++curent_minutes_;
+        if (curent_minutes_>min_in_day_){
+            requests_.erase(requests_.begin());
+            --curent_minutes_;            
+        }        
+        const auto matched_documents = search_server_.FindTopDocuments( raw_query, document_predicate );
+        requests_.push_back({ raw_query, static_cast<int>(matched_documents.size()) });
+        return matched_documents;
+    }
+
+

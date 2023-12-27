@@ -4,6 +4,8 @@
 #include "string_processing.h"
 #include "paginator.h"
 #include "request_queue.h"
+
+using std::literals::string_literals::operator""s;
 const int MAX_RESULT_DOCUMENT_COUNT = 5;
 
 
@@ -25,6 +27,6 @@ int main() {
     request_queue.AddFindRequest("big collar"s);
     // первый запрос удален, 1437 запросов с нулевым результатом
     request_queue.AddFindRequest("sparrow"s);
-    std::cout << "Total empty requests: "s << request_queue.GetNoResultRequests() << endl;
+    std::cout << "Total empty requests: "s << request_queue.GetNoResultRequests() <<std:: endl;
     return 0;
 } 

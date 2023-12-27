@@ -1,6 +1,6 @@
 #include "request_queue.h"
 using namespace std;
-    RequestQueue::RequestQueue(const SearchServer& search_server):search_server_(search_server) {}
+    RequestQueue::RequestQueue( const SearchServer& search_server ): search_server_( search_server ) {}
     
    
 
@@ -16,14 +16,12 @@ using namespace std;
 
 
     int RequestQueue::GetNoResultRequests() const {
-        int NoResult=0;
+        int result=0;
         for (const auto& request:requests_){
-            if (request.matched_documents.empty()){
-            ++NoResult;
+            if (!request.num_result){
+            ++result;
             }
         }
-     return NoResult;   
+     return result;   
     }
 
- RequestQueue::QueryResult::QueryResult (const string& query,const vector<Document>& search_result): Query(query),matched_documents(search_result){}
-   
